@@ -3,6 +3,7 @@ import json
 import os
 import urllib.error
 import urllib.request
+import uuid
 
 CONFIG = {
     'openai': ('OPENAI_API_KEY', 'https://api.openai.com/v1/chat/completions'),
@@ -37,6 +38,16 @@ class Provider:
             raise ValueError('Cần đặt MODEL là model có hỗ trợ tool calling.')
         self.name, self.model = name, model
         key_name, self.url = CONFIG[name]
+        # Tùy chọn: endpoint tương thích OpenAI khác (vd. gateway), dạng .../v1.
+        base_url = os.getenv('OPENAI_BASE_URL', '').strip()
+        self.extra_headers = {}
+        if name == 'openai' and base_url:
+            self.url = base_url.rstrip('/') + '/chat/completions'
+            # Một số gateway (Cloudflare) chặn User-Agent mặc định của urllib.
+            self.extra_headers = {'User-Agent': os.getenv('PROVIDER_USER_AGENT', 'StatusAgentLab/1.0')}
+            # OpenCode Go cần session ID cố định cho mỗi cuộc hội thoại (mỗi Provider = một run).
+            if 'opencode.ai' in base_url:
+                self.extra_headers['x-opencode-session'] = uuid.uuid4().hex
         self.key = os.getenv(key_name)
         if not self.key:
             raise ValueError(f'Thiếu {key_name}; xem README.md.')
@@ -47,10 +58,10 @@ class Provider:
         payload = {'model': self.model, 'messages': messages}
         if schemas:
             payload['tools'] = schemas
-        data = post_json(self.url, {'Authorization': f'Bearer {self.key}'}, payload)
+        data = post_json(self.url, {'Authorization': f'Bearer {self.key}', **self.extra_headers}, payload)
         choice = data['choices'][0]
         message = choice['message']
-        calls = [{'id': c['id'], 'name': c['function']['name'], 'arguments': c['function']['arguments']} for c in message.get('tool_calls', [])]
+        calls = [{'id': c['id'], 'name': c['function']['name'], 'arguments': c['function']['arguments']} for c in message.get('tool_calls') or []]
         return {'message': message, 'calls': calls, 'finish': choice.get('finish_reason'), 'usage': data.get('usage', {})}
 
     def _anthropic(self, messages, schemas):
