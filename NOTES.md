@@ -120,8 +120,8 @@ Trước đó, khi còn dùng `gpt-5.4-mini`, cùng câu hỏi này chạy theo 
   - [x] `eval_before.json` và `eval_after.json` có cùng `config` và đủ 22 case, điểm tổng khác `null`.
   - [x] `NOTES.md` đủ 5 mục.
   - [x] Bonus: `eval_bonus.json` đủ 10/10 case, `bonus_points_0_15` = 14.85 (xem Phần C).
-  - [ ] Commit và push. Kiểm tra `git ls-files | grep .env` chỉ còn `.env.example`.
-  - [ ] Nộp link repo lên LMS trước hạn.
+  - [x] Commit và push. Kiểm tra `git ls-files | grep .env` chỉ còn `.env.example`.
+  - [x] Nộp link repo lên LMS trước hạn.
 
 ---
 
